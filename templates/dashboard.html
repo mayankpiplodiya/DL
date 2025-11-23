@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashboard | Stock Predictor</title>
+
+    <!-- Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #071029;
+        --card: #0b1220;
+        --accent: #00bfa6;
+        --muted: #94a3b8;
+      }
+
+      body {
+        background: linear-gradient(180deg, #061123 0%, #031026 100%);
+        color: #e6eef6;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+          Arial;
+        padding: 28px;
+      }
+
+      .wrap {
+        max-width: 1000px;
+        margin: 24px auto;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .brand {
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.6px;
+      }
+
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(255, 255, 255, 0.01)
+        );
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .input-inline {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .form-control {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: #e6eef6;
+        border-radius: 8px;
+        padding: 10px;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        border: none;
+        color: #04121a;
+        font-weight: 600;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+
+      .suggestions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 6px 10px;
+        border-radius: 999px;
+        cursor: pointer;
+        color: #cfeef0;
+        font-size: 0.9rem;
+      }
+
+      .chip:hover {
+        background: rgba(14, 165, 164, 0.08);
+        color: var(--accent);
+      }
+
+      .logout {
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .small-muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <div>
+          <div class="brand">Stock Prediction Dashboard</div>
+          <div class="small-muted">
+            Compare PyTorch LSTM and ARIMA models interactively
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="small-muted mb-1">
+            Signed in as
+            <strong
+              >{{ session.user if session is defined and session.user is defined
+              else 'admin' }}</strong
+            >
+          </div>
+          <a href="/logout" class="btn btn-outline-light btn-sm logout"
+            >Logout</a
+          >
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <h4 class="mb-2">Select or Enter a Stock</h4>
+            <p class="small-muted">
+              Choose a symbol from the list or type any ticker (e.g., AAPL,
+              MSFT, TSLA, RELIANCE.NS).
+            </p>
+
+            <form method="POST" class="controls" id="tickerForm">
+              <div class="input-inline">
+                <select
+                  name="ticker"
+                  id="tickerSelect"
+                  class="form-control"
+                  aria-label="Select stock"
+                >
+                  <option value="" disabled selected>
+                    Choose from suggestions
+                  </option>
+                  {% for s in stocks %}
+                  <option value="{{ s }}">{{ s }}</option>
+                  {% endfor %}
+                </select>
+
+                <input
+                  type="text"
+                  name="ticker_custom"
+                  id="tickerInput"
+                  class="form-control"
+                  placeholder="Or type ticker (e.g., AAPL)"
+                />
+                <button type="submit" class="btn btn-primary">Predict</button>
+              </div>
+
+              <div>
+                <label class="small-muted mb-1">Quick suggestions:</label>
+                <div class="suggestions mt-2" id="suggestions">
+                  {% for s in stocks %}
+                  <div class="chip" data-symbol="{{ s }}">{{ s }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label class="small-muted">Historic window & test size</label>
+                <div class="d-flex gap-2 mt-1">
+                  <input
+                    type="number"
+                    name="time_step"
+                    value="60"
+                    min="5"
+                    max="365"
+                    class="form-control"
+                    style="width: 120px"
+                    title="Lookback window (days)"
+                  />
+                  <input
+                    type="number"
+                    name="test_size"
+                    value="30"
+                    min="5"
+                    max="120"
+                    class="form-control"
+                    style="width: 120px"
+                    title="Test period length (days)"
+                  />
+                  <select
+                    name="years"
+                    class="form-control"
+                    style="width: 120px"
+                  >
+                    <option value="1">1y</option>
+                    <option value="2">2y</option>
+                    <option value="3" selected>3y</option>
+                    <option value="5">5y</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const chips = document.querySelectorAll(".chip");
+        const input = document.getElementById("tickerInput");
+        const select = document.getElementById("tickerSelect");
+        const form = document.getElementById("tickerForm");
+
+        chips.forEach((c) => {
+          c.addEventListener("click", () => {
+            const sym = c.getAttribute("data-symbol");
+            input.value = sym;
+            for (let i = 0; i < select.options.length; i++) {
+              if (select.options[i].value === sym) {
+                select.selectedIndex = i;
+                break;
+              }
+            }
+          });
+        });
+
+        form.addEventListener("submit", function (e) {
+          const typed = input.value.trim();
+          if (typed) {
+            select.removeAttribute("name");
+            input.setAttribute("name", "ticker");
+          } else {
+            select.setAttribute("name", "ticker");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
