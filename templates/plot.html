@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ ticker }} — Stock Prediction</title>
+
+    <!-- Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #0f1724;
+        --card: #0b1220;
+        --accent: #0ea5a4;
+        --muted: #94a3b8;
+        --glass: rgba(255, 255, 255, 0.03);
+      }
+      body {
+        background: linear-gradient(180deg, #071029 0%, #071621 100%);
+        color: #e6eef6;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+        padding: 24px;
+      }
+
+      .container-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+
+      .plot-wrap {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .plot-box {
+        background: var(--glass);
+        border-radius: 10px;
+        padding: 10px;
+        flex: 1 1 720px;
+        min-width: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      .metrics-box {
+        width: 320px;
+        min-width: 260px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .metric-card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(255, 255, 255, 0.01)
+        );
+        border-radius: 8px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+      }
+
+      .small-muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+      }
+      .back {
+        color: #cfeef0;
+        text-decoration: none;
+      }
+      .download-btn {
+        margin-left: 8px;
+      }
+
+      table th,
+      table td {
+        color: #e6eef6;
+      }
+      @media (max-width: 900px) {
+        .plot-wrap {
+          flex-direction: column;
+        }
+        .metrics-box {
+          width: 100%;
+        }
+        .plot-box {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3>{{ ticker }} Stock Prediction</h3>
+          <small class="small-muted"
+            >Comparison between Neural and ARIMA models</small
+          >
+        </div>
+        <div class="text-end">
+          <a href="/dashboard" class="btn btn-outline-light btn-sm"
+            >← Back to Dashboard</a
+          >
+        </div>
+      </div>
+
+      <div class="container-card">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h5>Last {{ recent_table|length }} Days Evaluation</h5>
+            <div class="small-muted mt-1">
+              Blue = Actual, dashed = Neural prediction, dotted = ARIMA
+              prediction.
+            </div>
+          </div>
+
+          <div class="text-end">
+            <div class="small-muted mt-1">
+              Model run date: {{ (results_df.index.max() if results_df is
+              defined else '') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="plot-wrap">
+          <!-- Plot -->
+          <div class="plot-box">
+            <div
+              class="w-100 d-flex justify-content-between align-items-center mb-2"
+            >
+              <h5 class="mb-0">Visual Comparison</h5>
+              <div>
+                <button
+                  id="downloadPlotBtn"
+                  class="btn btn-sm btn-outline-light"
+                >
+                  Download Plot (PNG)
+                </button>
+                <button
+                  id="downloadCsvBtn"
+                  class="btn btn-sm btn-outline-light download-btn"
+                >
+                  Download CSV
+                </button>
+              </div>
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: center">
+              <img
+                id="plotImage"
+                src="data:image/png;base64,{{ plot_url }}"
+                alt="{{ ticker }} prediction plot"
+                style="
+                  max-width: 100%;
+                  height: auto;
+                  border-radius: 6px;
+                  border: 1px solid rgba(255, 255, 255, 0.03);
+                "
+              />
+            </div>
+
+            <div class="small-muted mt-2 text-center">
+              Use the buttons above to save visuals and data for your report.
+            </div>
+          </div>
+
+          <!-- Metrics -->
+          <div class="metrics-box">
+            {% set L = lstm_metrics or {} %} {% set A = arima_metrics or {} %}
+            {% set l_mse = (L.get('mse') if L.get('mse') is not none else
+            L.get('MSE')) %} {% set l_rmse = (L.get('rmse') if L.get('rmse') is
+            not none else L.get('RMSE')) %} {% set l_mae = (L.get('mae') if
+            L.get('mae') is not none else L.get('MAE')) %} {% set l_r2 =
+            (L.get('r2') if L.get('r2') is not none else L.get('R2')) %} {% set
+            a_mse = (A.get('mse') if A.get('mse') is not none else A.get('MSE'))
+            %} {% set a_rmse = (A.get('rmse') if A.get('rmse') is not none else
+            A.get('RMSE')) %} {% set a_mae = (A.get('mae') if A.get('mae') is
+            not none else A.get('MAE')) %} {% set a_r2 = (A.get('r2') if
+            A.get('r2') is not none else A.get('R2')) %}
+
+            <div class="metric-card">
+              <h6 class="mb-1">Neural Model Metrics</h6>
+              <ul class="list-unstyled mb-0">
+                <li>
+                  <strong>MSE:</strong> {{ '%.4f'|format(l_mse) if l_mse is not
+                  none else '—' }}
+                </li>
+                <li>
+                  <strong>RMSE:</strong> {{ '%.4f'|format(l_rmse) if l_rmse is
+                  not none else '—' }}
+                </li>
+                <li>
+                  <strong>MAE:</strong> {{ '%.4f'|format(l_mae) if l_mae is not
+                  none else '—' }}
+                </li>
+                <li>
+                  <strong>R²:</strong> {{ '%.4f'|format(l_r2) if l_r2 is not
+                  none else '—' }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="metric-card">
+              <h6 class="mb-1">ARIMA Model Metrics</h6>
+              <ul class="list-unstyled mb-0">
+                <li>
+                  <strong>MSE:</strong> {{ '%.4f'|format(a_mse) if a_mse is not
+                  none else '—' }}
+                </li>
+                <li>
+                  <strong>RMSE:</strong> {{ '%.4f'|format(a_rmse) if a_rmse is
+                  not none else '—' }}
+                </li>
+                <li>
+                  <strong>MAE:</strong> {{ '%.4f'|format(a_mae) if a_mae is not
+                  none else '—' }}
+                </li>
+                <li>
+                  <strong>R²:</strong> {{ '%.4f'|format(a_r2) if a_r2 is not
+                  none else '—' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent table -->
+        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.04)" />
+        <h5 class="mb-3">Recent Test Results</h5>
+        <div class="table-responsive">
+          <table id="resultsTable" class="table table-sm table-borderless">
+            <thead>
+              <tr class="small-muted">
+                <th>Date</th>
+                <th>Actual</th>
+                <th>Neural Pred</th>
+                <th>ARIMA Pred</th>
+                <th>ARIMA Lower</th>
+                <th>ARIMA Upper</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in recent_table %}
+              <tr>
+                <td>{{ row.Date }}</td>
+                <td>{{ '%.4f'|format(row.actual) }}</td>
+                <td>{{ '%.4f'|format(row.lstm_pred) }}</td>
+                <td>{{ '%.4f'|format(row.arima_pred) }}</td>
+                <td>{{ '%.4f'|format(row.arima_lower) }}</td>
+                <td>{{ '%.4f'|format(row.arima_upper) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-2">
+          <a href="/dashboard" class="btn btn-outline-light btn-sm"
+            >Back to Dashboard</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- JS for download buttons -->
+    <script>
+      // Download plot
+      document
+        .getElementById("downloadPlotBtn")
+        .addEventListener("click", function () {
+          const img = document.getElementById("plotImage");
+          const a = document.createElement("a");
+          a.href = img.src;
+          a.download = "{{ ticker }}_prediction.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+
+      // Download CSV
+      document
+        .getElementById("downloadCsvBtn")
+        .addEventListener("click", function () {
+          const rows = Array.from(
+            document.querySelectorAll("#resultsTable tr")
+          );
+          const csv = rows
+            .map((row) => {
+              const cells = Array.from(row.querySelectorAll("th, td"));
+              return cells
+                .map((c) => '"' + c.innerText.replace(/"/g, '""') + '"')
+                .join(",");
+            })
+            .join("\n");
+
+          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "{{ ticker }}_results.csv";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
