@@ -1,0 +1,40 @@
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #2b5876, #4e4376);
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.login-box, .dash, .plot-box {
+  background: rgba(255,255,255,0.1);
+  padding: 30px;
+  border-radius: 10px;
+  margin: 80px auto;
+  width: 400px;
+}
+
+input, select, button {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  width: 80%;
+  border-radius: 5px;
+  border: none;
+}
+
+button {
+  background: #00c6ff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0072ff;
+}
+
+a.logout, a.back {
+  color: #00c6ff;
+  text-decoration: none;
+}
